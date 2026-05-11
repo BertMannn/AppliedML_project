@@ -30,6 +30,9 @@ class CleanRecipeData:
         print("Dropping NA or <10 reviews...")
         df = df[df["ReviewCount"] != "NA"]
         df = df.dropna(subset=["ReviewCount"])
+        # After this there was still 1 row where the aggregated rating was NA, so we drop that too:
+        df = df.dropna(subset=["AggregatedRating"]) 
+
         print(f"Rows after dropping NA: {len(df)}")
 
         df = df[df["ReviewCount"].astype(int) >= 10]
