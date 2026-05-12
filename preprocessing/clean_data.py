@@ -27,12 +27,12 @@ class CleanRecipeData:
         print("Dropping Duplicates...")
         df = df.drop_duplicates()
 
-        print("Dropping NA or <10 reviews...")
+        print("Dropping NA or <5 reviews...")
         df = df[df["ReviewCount"] != "NA"]
         df = df.dropna(subset=["ReviewCount"])
         print(f"Rows after dropping NA: {len(df)}")
 
-        df = df[df["ReviewCount"].astype(int) >= 10]
+        df = df[df["ReviewCount"].astype(int) >= 5]
         print(f"Rows after dropping ReviewCount <10: {len(df)}")
 
         print("Dropping useless columns...")
@@ -54,7 +54,8 @@ class CleanRecipeData:
         for col in vector_cols:
             df[col] = df[col].apply(
                 lambda x: self._convert_r_vectors(x) if isinstance(x, str) else x
-            )
+            )   
+
 
         if write_new_data:
             self._write_clean_data(df)
@@ -85,7 +86,6 @@ class CleanRecipeData:
 
         # R vectors start with "c("
         if r_vec.startswith("c("):
-            # Get vector content
             vector_content = r_vec[2:-1]
             # Find all items in the vector
             items = re.findall(r'"((?:[^"\\]|\\.)*)"', vector_content)
