@@ -6,7 +6,7 @@ import re
 class CleanRecipeData:
     def __call__(self, data_path: Path, *, write_new_data: bool = False):
         """When you call the class the data will be cleaned. This is done by
-        removing useless columns, NA values, and rows with reviewcount <10
+        removing useless columns, NA values, and rows with reviewcount <5
 
         Args:
             data_path (Path): Path to the data
