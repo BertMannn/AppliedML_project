@@ -20,6 +20,7 @@ dependencies = [
     { name = "pandas" },
     { name = "ruff" },
     { name = "scikit-learn" },
+    { name = "scipy" },
 ]
 
 [package.metadata]
@@ -29,6 +30,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=3.0.2" },
     { name = "ruff", specifier = ">=0.15.12" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
+    { name = "scipy", specifier = ">=1.17.1" },
 ]
 
 [[package]]
