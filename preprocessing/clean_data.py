@@ -33,7 +33,7 @@ class CleanRecipeData:
         print(f"Rows after dropping NA: {len(df)}")
 
         df = df[df["ReviewCount"].astype(int) >= 5]
-        print(f"Rows after dropping ReviewCount <10: {len(df)}")
+        print(f"Rows after dropping ReviewCount <5: {len(df)}")
 
         print("Dropping useless columns...")
         useless_columns = [

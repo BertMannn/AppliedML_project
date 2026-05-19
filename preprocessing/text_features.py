@@ -143,6 +143,8 @@ class BuildFeatureMatrix:
             str: The keywords, but space-separated instead of string
         """
 
+        if isinstance(raw, list):
+            return " ".join(str(item) for item in raw)
         if not isinstance(raw, str):
             return ""
         try:

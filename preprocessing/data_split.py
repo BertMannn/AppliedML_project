@@ -1,11 +1,9 @@
-from pathlib import Path
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from categorical_encoding import get_encoded_features
 
 
 def split_data(
-    data_path: Path,
     *,
     test_size: float = 0.2,
     random_state: int = 42,
@@ -15,7 +13,6 @@ def split_data(
     is done before vectorization to prevent leakage.
 
     Args:
-        data_path (Path): The path to the features
         test_size (float, optional): percentage of test data. Defaults to 0.2.
         random_state (int, optional): random state. Defaults to 42.
         target (str, optional): The label target we want to predict. Defaults to "RatingClass".
@@ -26,10 +23,7 @@ def split_data(
     Returns:
         pd.DataFrame: The train and test dataframes
     """
-    if data_path.suffix.lower() != ".csv":
-        raise TypeError("The data should be a .csv file")
-
-    df = pd.read_csv(data_path)
+    df = get_encoded_features()
 
     # Stratify on the target so the class balance is preserved in both splits.
     train_df, test_df = train_test_split(

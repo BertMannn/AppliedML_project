@@ -7,7 +7,6 @@ from text_features import BuildFeatureMatrix
 
 
 def get_data(
-    data_path: Path = Path("data/features.csv"),
     *,
     test_size: float = 0.2,
     random_state: int = 42,
@@ -15,7 +14,6 @@ def get_data(
     """Get all the formatted data. Standard formatted with an 80/20 train/test split
 
     Args:
-        data_path (Path, optional): Path to features. Defaults to Path("data/features.csv").
         test_size (float, optional): Percentage of test data. Defaults to 0.2.
         random_state (int, optional): random state. Defaults to 42.
 
@@ -24,7 +22,7 @@ def get_data(
     """
 
     train_df, test_df = split_data(
-        data_path, test_size=test_size, random_state=random_state
+        test_size=test_size, random_state=random_state
     )
 
     feature_extractor = BuildFeatureMatrix()
@@ -40,3 +38,5 @@ if __name__ == "__main__":
     print("X_test: ", X_test.shape)
     print("y_train:", y_train.shape)
     print("y_test: ", y_test.shape)
+    print("y_train counts:\n", y_train.value_counts())
+    print("y_test counts:\n", y_test.value_counts())

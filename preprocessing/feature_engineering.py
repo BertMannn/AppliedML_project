@@ -75,7 +75,5 @@ if "Description" in df.columns:
         lambda x: len(x) if isinstance(x, str) else 0
     )
 
-# Save features:
-output_path = Path("data/features.csv")
-df.to_csv(output_path, index=False)
-print(f"Saved to {output_path}")
+def get_feature_engineering():
+    return df
