@@ -20,15 +20,19 @@ df["RatingClass"] = df["AggregatedRating"].apply(
 # Feature engineering
 # -------------------
 
+
 # Since the original preptime, cooktime and totaltime values are formatted as 'PT20M' for example,
 # we want to turn these values into integers:
 def parse_duration(val):
     """Turn the duration values to minutes."""
     if pd.isna(val) or not isinstance(val, str):
         return None
-    hours = re.search(r'(\d+)H', val)
-    minutes = re.search(r'(\d+)M', val)
-    return (int(hours.group(1)) * 60 if hours else 0) + (int(minutes.group(1)) if minutes else 0)
+    hours = re.search(r"(\d+)H", val)
+    minutes = re.search(r"(\d+)M", val)
+    return (int(hours.group(1)) * 60 if hours else 0) + (
+        int(minutes.group(1)) if minutes else 0
+    )
+
 
 df["CookTimeMinutes"] = df["CookTime"].apply(parse_duration)
 df["PrepTimeMinutes"] = df["PrepTime"].apply(parse_duration)
@@ -36,18 +40,30 @@ df["TotalTimeMinutes"] = df["TotalTime"].apply(parse_duration)
 
 
 # Make sure other numeric values are floats:
-numeric_cols = ["RecipeServings", "Calories", "FatContent", "SaturatedFatContent",
-                "CholesterolContent", "SodiumContent", "CarbohydrateContent",
-                "FiberContent", "SugarContent", "ProteinContent"]
+numeric_cols = [
+    "RecipeServings",
+    "Calories",
+    "FatContent",
+    "SaturatedFatContent",
+    "CholesterolContent",
+    "SodiumContent",
+    "CarbohydrateContent",
+    "FiberContent",
+    "SugarContent",
+    "ProteinContent",
+]
 
 for col in numeric_cols:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
+
 # Create count features from text features, for example to be able to compare the length of the
 # instructions:
 def safe_len(val):
     return len(val) if isinstance(val, list) else 0
+
+
 # This prevents crashing in case a value is not a list
 
 df["KeywordCount"] = df["Keywords"].apply(safe_len)

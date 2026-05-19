@@ -54,8 +54,7 @@ class CleanRecipeData:
         for col in vector_cols:
             df[col] = df[col].apply(
                 lambda x: self._convert_r_vectors(x) if isinstance(x, str) else x
-            )   
-
+            )
 
         if write_new_data:
             self._write_clean_data(df)

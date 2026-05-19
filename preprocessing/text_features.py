@@ -1,16 +1,26 @@
 import ast
-from pathlib import Path
 
 import pandas as pd
 from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-class ExtractingTextFeatures:
-    #text columns that are changed into numeric features using TF-IDF.
+
+class BuildFeatureMatrix:
+    """Build sparse feature matrix from recipe data
+
+    First use fit_transform to create vectorizers and transform training data.
+    Then use transform to transform testing data.
+
+        Attributes:
+        TEXT_COLUMNS: Text columns converted into numeric features via TF-IDF.
+        DROP_COLUMNS: Columns removed before building the matrix because they
+            are uninformative or could leak the target.
+        MAX_NUMBER_FEATURES_PER_COLUMN: Vocabulary cap per text column.
+        TARGET: Name of the label column.
+    """
+
     TEXT_COLUMNS: tuple[str, ...] = ("Name", "Description", "Keywords")
 
-    #dropping the following columns before building the feature matrix because they are not useful
-    #and could lead to data leakage.
     DROP_COLUMNS: tuple[str, ...] = (
         "CookTime",
         "PrepTime",
@@ -20,58 +30,118 @@ class ExtractingTextFeatures:
         "RecipeInstructions",
     )
 
-    #max number of words that is seen as a feature per text column
     MAX_NUMBER_FEATURES_PER_COLUMN: int = 750
 
-    #vectorizing text columns using TF-IDF and combine it with numeric features.
-    def __call__(self, data_path: Path, *, write_new_data: bool = False):
-        if data_path.suffix.lower() != ".csv":
-            raise TypeError("The data should be a .csv file")
+    TARGET: str = "RatingClass"
 
-        print("Reading data...")
-        df = pd.read_csv(data_path)
-        print(f"Rows loaded: {len(df)}, columns: {df.shape[1]}")
+    def __init__(self) -> None:
+        """Initialize with an empty vectorizer store (nothing fitted yet)."""
+        self._vectorizers: dict[str, TfidfVectorizer] = {}
 
-        #removing target variable before creating features, so we do not use it as a feature.
-        print("Separating target variable (RatingClass)...")
-        y = df["RatingClass"]
-        df = df.drop(columns=["RatingClass"])
+    def fit_transform(self, df: pd.DataFrame) -> tuple[sparse.csr_matrix, pd.Series]:
+        """Fit vectorizers on the training data, fits one vectorizer per text column
 
-        #dropping all columns that we cannot use.
-        print(f"Dropping columns: {self.DROP_COLUMNS}")
+        Args:
+            df (pd.DataFrame): Training df
+
+        Returns:
+            tuple[sparse.csr_matrix, pd.Series]: X: Sparse CSR matrix with transformed features, y: Labels
+        """
+        X, y = self._prepare_dataframe(df)
+
+        print("Fitting + transforming text columns with TF-IDF...")
+        tfidf_matrices: list[sparse.csr_matrix] = []
+        for col in self.TEXT_COLUMNS:
+            vectorizer = TfidfVectorizer(
+                max_features=self.MAX_NUMBER_FEATURES_PER_COLUMN,
+                # Drop common stop words that don't affect the rating.
+                stop_words="english",
+                lowercase=True,
+            )
+            matrix = vectorizer.fit_transform(X[col])
+            self._vectorizers[col] = vectorizer
+            print(f"  {col}: {matrix.shape[1]} features")
+            tfidf_matrices.append(matrix)
+
+        return self._combine_dataframes(X, tfidf_matrices), y
+
+    def transform(self, df: pd.DataFrame) -> tuple[sparse.csr_matrix, pd.Series]:
+        """Transform test data using fitted vectorizers
+
+        Args:
+            df (pd.DataFrame): df to transform
+
+        Raises:
+            RuntimeError: Should fit vectorizers before transforming.
+
+        Returns:
+            tuple[sparse.csr_matrix, pd.Series]: X: Sparse CSR matrix with transformed features, y: Labels
+        """
+
+        if not self._vectorizers:
+            raise RuntimeError("Call fit_transform on the training data first.")
+
+        X, y = self._prepare_dataframe(df)
+
+        print("Transforming text columns with TF-IDF...")
+        tfidf_matrices: list[sparse.csr_matrix] = []
+        for col in self.TEXT_COLUMNS:
+            vectorizer = self._vectorizers[col]
+            tfidf_matrices.append(vectorizer.transform(X[col]))
+
+        return self._combine_dataframes(X, tfidf_matrices), y
+
+    def _prepare_dataframe(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        """Split the target from the df, remove columns we dont want, and clean text columns
+
+        Args:
+            df (pd.DataFrame): Raw input df
+
+        Returns:
+            tuple[pd.DataFrame, pd.Series]: Feature df and target as pd.Series
+        """
+        df = df.copy()
+
+        y = df[self.TARGET]
+        df = df.drop(columns=[self.TARGET])
         df = df.drop(columns=list(self.DROP_COLUMNS), errors="ignore")
 
-        #for TF-IDF we want a flat string. The vectorizer can then count the individual words as tokens.
-        print("Flattening Keywords list-strings into plain text...")
+        # Keywords is a stringified list -> flatten to plain text for TF-IDF.
         df["Keywords"] = df["Keywords"].apply(self._flatten_keyword_list)
-
         for col in self.TEXT_COLUMNS:
             df[col] = df[col].fillna("")
 
-        #Each text column gets its own TF-IDF matrix. They are vectorized seperately.
-        print("Vectorizing text columns with TF-IDF...")
-        tfidf_list = []
-        for col in self.TEXT_COLUMNS:
-            matrix = self._vectorize_column(df[col], col)
-            tfidf_list.append(matrix)
+        return df, y
 
-        numeric_df = df.drop(columns=list(self.TEXT_COLUMNS))
-        print(f"Numeric/encoded feature columns: {numeric_df.shape[1]}")
+    def _combine_dataframes(
+        self, X: pd.DataFrame, tfidf_matrices: list[sparse.csr_matrix]
+    ) -> sparse.csr_matrix:
+        """Stack all the data into one sparse CSR matrix
 
-        #numeric dataframe is transformed to a sparse matrix.
-        numeric_matrix = sparse.csr_matrix(
-            numeric_df.fillna(0).values.astype(float)
-        )
+        Args:
+            X (pd.DataFrame): Feature names returned by prepare
+            tfidf_matrices (list[sparse.csr_matrix]): The TFIDF matrices, one for each column in TEXT_COLUMNS
 
-        print("Combining numeric features and TF-IDF matrices...")
-        X = sparse.hstack([numeric_matrix, *tfidf_list], format="csr")
-        print(f"Final feature matrix shape: {X.shape}")
+        Returns:
+            sparse.csr_matrix: The combined feature matrix as a sparse CSR matrix
+        """
 
-        if write_new_data:
-            self._write_features(X, y)
+        numeric_df = X.drop(columns=list(self.TEXT_COLUMNS)).fillna(0)
 
-    #stringified list of keywords is converted into a plain string.
+        # Numeric block as a sparse matrix, then stack everything horizontally.
+        numeric_matrix = sparse.csr_matrix(numeric_df.values.astype(float))
+        combined = sparse.hstack([numeric_matrix, *tfidf_matrices], format="csr")
+        return combined
+
     def _flatten_keyword_list(self, raw: str) -> str:
+        """Turn a list of keywords contraining strings into space-separeted text
+
+        Args:
+            raw (str): A values from the keywords column
+
+        Returns:
+            str: The keywords, but space-separated instead of string
+        """
 
         if not isinstance(raw, str):
             return ""
@@ -82,40 +152,3 @@ class ExtractingTextFeatures:
         if isinstance(parsed, list):
             return " ".join(str(item) for item in parsed)
         return str(parsed)
-
-    #apply a TF-IDF vectorizer on a text column and return its matrix.
-    def _vectorize_column(self, series: pd.Series, column_name: str):
-
-        vectorizer = TfidfVectorizer(
-            max_features=self.MAX_NUMBER_FEATURES_PER_COLUMN,
-            #removing stop words like "the", "a" and "is", because they do not influence the rating
-            stop_words="english",
-            lowercase=True,
-        )
-        matrix = vectorizer.fit_transform(series)
-        print(f"  {column_name}: {matrix.shape[1]} features")
-        return matrix
-
-    #saving the feature matrix and then labeling vector to data.
-    def _write_features(self, X, y: pd.Series):
-
-        data_dir = Path(__file__).parent.parent / "data"
-
-        x_path = data_dir / "X_features.npz"
-        y_path = data_dir / "y_labels.csv"
-
-        print(f"Writing feature matrix to {x_path}")
-        sparse.save_npz(x_path, X)
-
-        print(f"Writing labels to {y_path}")
-        y.to_csv(y_path, index=False)
-
-
-def main():
-
-    data_path = Path("data/features.csv")
-    ExtractingTextFeatures()(data_path, write_new_data=True)
-
-
-if __name__ == "__main__":
-    main()
