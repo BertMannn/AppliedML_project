@@ -30,5 +30,6 @@ def encode_recipe_category() -> pd.DataFrame:
     )
     return df
 
+
 def get_encoded_features():
     return encode_recipe_category()

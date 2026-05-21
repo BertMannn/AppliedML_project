@@ -5,7 +5,9 @@ from preprocessing.get_data import get_data
 
 
 def eval_baseline():
-    X_train, X_test, y_train, y_test, numeric_columns = get_data()
+    X_train, X_test, y_train, y_test, numeric_columns = get_data(
+        return_numeric_columns=True
+    )
     baseline_logres = BaselineOvO(numeric_columns, max_iter=1000)
     baseline_logres.fit(X_train, y_train)
 

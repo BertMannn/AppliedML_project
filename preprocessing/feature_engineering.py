@@ -75,5 +75,6 @@ if "Description" in df.columns:
         lambda x: len(x) if isinstance(x, str) else 0
     )
 
+
 def get_feature_engineering():
     return df

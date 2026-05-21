@@ -7,6 +7,7 @@ from scipy import sparse
 
 def get_data(
     *,
+    return_numeric_columns: bool = False,
     test_size: float = 0.2,
     random_state: int = 42,
 ) -> tuple[sparse.csr_matrix, pd.Series, sparse.csr_matrix, pd.Series]:
@@ -20,16 +21,17 @@ def get_data(
         tuple[pd.DataFrame, ...]: Train test split as DataFrames
     """
 
-    train_df, test_df = split_data(
-        test_size=test_size, random_state=random_state
-    )
+    train_df, test_df = split_data(test_size=test_size, random_state=random_state)
 
     feature_extractor = BuildFeatureMatrix()
     X_train, y_train = feature_extractor.fit_transform(train_df)
     X_test, y_test = feature_extractor.transform(test_df)
     numeric_columns = feature_extractor.numeric_columns
 
-    return X_train, X_test, y_train, y_test, numeric_columns
+    if return_numeric_columns:
+        return X_train, X_test, y_train, y_test, numeric_columns
+
+    return X_train, X_test, y_train, y_test
 
 
 if __name__ == "__main__":
@@ -40,5 +42,3 @@ if __name__ == "__main__":
     print("y_test: ", y_test.shape)
     print("y_train counts:\n", y_train.value_counts())
     print("y_test counts:\n", y_test.value_counts())
-
-    

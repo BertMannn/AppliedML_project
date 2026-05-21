@@ -14,7 +14,6 @@ from imblearn.under_sampling import RandomUnderSampler
 from itertools import combinations
 
 
-
 NUMERIC_FEATURE_NAMES = (
     "Calories",
     "FatContent",
@@ -50,7 +49,8 @@ def build_logres_features(numeric_block_columns: list[str]) -> ColumnTransformer
         i for i, c in enumerate(numeric_block_columns) if c in numeric_names
     ]
     categorical_indices = [
-        i for i, c in enumerate(numeric_block_columns)
+        i
+        for i, c in enumerate(numeric_block_columns)
         if c.startswith("RecipeCategory_")
     ]
 
@@ -95,12 +95,14 @@ class BaselineOvO:
         self._class_names = class_names
         self._max_iter = max_iter
 
-    def _undersample(self, X: sparse.csr_matrix, y: pd.Series) -> tuple[pd.DataFrame, ...]:
+    def _undersample(
+        self, X: sparse.csr_matrix, y: pd.Series
+    ) -> tuple[pd.DataFrame, ...]:
         """Undersample majority class, this is needed for the <= 4.0 class.
 
         Args:
-            X (pd.DataFrame): observations
-            y (pd.DataFrame): labels
+            X (sparse.csr_matrix): observations
+            y (pd.Series): labels
 
         Returns:
             tuple[pd.DataFrame]: Undersampled X and y
@@ -113,8 +115,8 @@ class BaselineOvO:
         """Fit all three one-vs-one models
 
         Args:
-            X (pd.DataFrame): observations
-            y (pd.DataFrame): labels
+            X (sparse.csr_matrix): observations
+            y (pd.Series): labels
 
         Returns:
             BaselineOvO: Fitted estimator
@@ -129,8 +131,16 @@ class BaselineOvO:
 
             pipe = Pipeline(
                 [
-                    ("preprocessing", build_logres_features(self._numeric_block_columns)),
-                    ("lr", LogisticRegression(max_iter=self._max_iter, class_weight="balanced")),
+                    (
+                        "preprocessing",
+                        build_logres_features(self._numeric_block_columns),
+                    ),
+                    (
+                        "lr",
+                        LogisticRegression(
+                            max_iter=self._max_iter, class_weight="balanced"
+                        ),
+                    ),
                 ]
             )
 
@@ -147,7 +157,7 @@ class BaselineOvO:
         """Predict class based on observation.
 
         Args:
-            X (pd.DataFrame): observations
+            X (sparse.csr_matrix): observations
             output_class_names (bool, optional): if True, return human-readable class names;
                 otherwise return integer class labels.. Defaults to False.
             return_proba (bool, optional): if True, also return the full probability

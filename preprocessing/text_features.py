@@ -157,7 +157,7 @@ class BuildFeatureMatrix:
         if isinstance(parsed, list):
             return " ".join(str(item) for item in parsed)
         return str(parsed)
-    
+
     @property
     def numeric_columns(self):
         return self._numeric_block_columns
