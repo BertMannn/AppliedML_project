@@ -1,16 +1,15 @@
-from pathlib import Path
-
 import pandas as pd
 
-from data_split import split_data
-from text_features import BuildFeatureMatrix
+from .data_split import split_data
+from .text_features import BuildFeatureMatrix
+from scipy import sparse
 
 
 def get_data(
     *,
     test_size: float = 0.2,
     random_state: int = 42,
-) -> tuple[pd.DataFrame, ...]:
+) -> tuple[sparse.csr_matrix, pd.Series, sparse.csr_matrix, pd.Series]:
     """Get all the formatted data. Standard formatted with an 80/20 train/test split
 
     Args:
@@ -28,8 +27,9 @@ def get_data(
     feature_extractor = BuildFeatureMatrix()
     X_train, y_train = feature_extractor.fit_transform(train_df)
     X_test, y_test = feature_extractor.transform(test_df)
+    numeric_columns = feature_extractor.numeric_columns
 
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test, numeric_columns
 
 
 if __name__ == "__main__":
@@ -40,3 +40,5 @@ if __name__ == "__main__":
     print("y_test: ", y_test.shape)
     print("y_train counts:\n", y_train.value_counts())
     print("y_test counts:\n", y_test.value_counts())
+
+    

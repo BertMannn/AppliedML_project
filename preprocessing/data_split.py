@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from categorical_encoding import get_encoded_features
+from .categorical_encoding import get_encoded_features
 
 
 def split_data(
@@ -25,7 +25,6 @@ def split_data(
     """
     df = get_encoded_features()
 
-    # Stratify on the target so the class balance is preserved in both splits.
     train_df, test_df = train_test_split(
         df,
         test_size=test_size,

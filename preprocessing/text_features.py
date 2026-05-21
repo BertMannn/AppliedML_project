@@ -37,6 +37,7 @@ class BuildFeatureMatrix:
     def __init__(self) -> None:
         """Initialize with an empty vectorizer store (nothing fitted yet)."""
         self._vectorizers: dict[str, TfidfVectorizer] = {}
+        self._numeric_block_columns: list[str] = []
 
     def fit_transform(self, df: pd.DataFrame) -> tuple[sparse.csr_matrix, pd.Series]:
         """Fit vectorizers on the training data, fits one vectorizer per text column
@@ -128,7 +129,9 @@ class BuildFeatureMatrix:
 
         numeric_df = X.drop(columns=list(self.TEXT_COLUMNS)).fillna(0)
 
-        # Numeric block as a sparse matrix, then stack everything horizontally.
+        # We are using sparse matrices, do we need to remember column ordering
+        self._numeric_block_columns = numeric_df.columns.tolist()
+
         numeric_matrix = sparse.csr_matrix(numeric_df.values.astype(float))
         combined = sparse.hstack([numeric_matrix, *tfidf_matrices], format="csr")
         return combined
@@ -154,3 +157,7 @@ class BuildFeatureMatrix:
         if isinstance(parsed, list):
             return " ".join(str(item) for item in parsed)
         return str(parsed)
+    
+    @property
+    def numeric_columns(self):
+        return self._numeric_block_columns
