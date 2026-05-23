@@ -5,3 +5,4 @@ dist/
 data/recipes.csv
 .ruff_cache/
 test/
+.DS_Store

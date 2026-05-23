@@ -6,6 +6,7 @@ import numpy as np
 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
+from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from scipy import sparse
@@ -64,7 +65,13 @@ def build_logres_features(numeric_block_columns: list[str]) -> ColumnTransformer
     )
 
 
-class BaselineOvO:
+class BaselineLR:
+    """Classes enabling us to get the baseline estimations of model performance
+
+    We designed our own model, called via "fit" and "predict", then we also have
+    standard sklearn model. The standard sklearn models can be fitted using "fit_models"
+    and predictions can be called using "predict_all". 
+    """
     def __init__(
         self,
         numeric_block_columns: list[str],
@@ -111,7 +118,7 @@ class BaselineOvO:
             sampling_strategy="auto", random_state=self._random_state
         ).fit_resample(X, y)
 
-    def fit(self, X: sparse.csr_matrix, y: pd.Series) -> BaselineOvO:
+    def fit(self, X: sparse.csr_matrix, y: pd.Series) -> BaselineLR:
         """Fit all three one-vs-one models
 
         Args:
@@ -205,3 +212,89 @@ class BaselineOvO:
             return labels, probs
 
         return labels
+
+    def fit_models(self, X: sparse.csr_matrix, y: pd.Series) -> BaselineLR:
+        """Fit standard models given by sklearn, to compare to our own model
+
+        Args:
+            X (sparse.csr_matrix): observations
+            y (pd.Series): labels
+
+        Returns:
+            BaselineLR: fitted models, stored in self._pipes
+        """
+
+        base_lr = LogisticRegression(max_iter=self._max_iter, class_weight="balanced")
+
+        self._pipes = {
+            "standard": Pipeline(
+                [
+                    (
+                        "preprocessing",
+                        build_logres_features(self._numeric_block_columns),
+                    ),
+                    ("lr", base_lr),
+                ]
+            ),
+            "ovr": Pipeline(
+                [
+                    (
+                        "preprocessing",
+                        build_logres_features(self._numeric_block_columns),
+                    ),
+                    ("lr", OneVsRestClassifier(base_lr)),
+                ]
+            ),
+            "ovo": Pipeline(
+                [
+                    (
+                        "preprocessing",
+                        build_logres_features(self._numeric_block_columns),
+                    ),
+                    ("lr", OneVsOneClassifier(base_lr)),
+                ]
+            ),
+        }
+
+        for _, pipe in self._pipes.items():
+            pipe.fit(X, y)
+
+        return self
+
+    def predict_all(self, X: sparse.csr_matrix) -> tuple[np.ndarray, ...]:
+        """Predict the labels using the standard models
+
+        Args:
+            X (sparse.csr_matrix): observations
+
+        Returns:
+            tuple[np.ndarray, ...]: The predicted labels by the three models
+        """
+        results = {}
+        classes = list(self._rating_classes)
+        class_idx = {c: i for i, c in enumerate(classes)}
+        n = X.shape[0]
+        for strategy_name, pipe in self._pipes.items():
+            votes = np.zeros((n, len(classes)))
+            scores_sum = np.zeros((n, len(classes)))
+
+            pred = pipe.predict(X)
+            for c in classes:
+                votes[pred == c, class_idx[c]] += 1
+
+            # Tiebreaker: Use probabilities if available, otherwise decision function
+            lr_step = pipe.named_steps["lr"]
+            if hasattr(lr_step, "predict_proba"):
+                scores = pipe.predict_proba(X)
+            else:
+                # OneVsOne uses decision_function for confidence scores
+                scores = pipe.decision_function(X)
+
+            for j, c in enumerate(lr_step.classes_):
+                scores_sum[:, class_idx[c]] += scores[:, j]
+
+            ranked = np.lexsort((scores_sum, votes), axis=1)
+            winners = ranked[:, -1]
+            results[strategy_name] = np.array([classes[i] for i in winners])
+
+        return results["standard"], results["ovr"], results["ovo"]
