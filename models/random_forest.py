@@ -30,6 +30,7 @@ class RandomForestModel:
         max_depth: int | None = None,
         random_state: int = 42,
         class_names: dict[int, str] | None = None,
+        min_samples_leaf: int = 1
     ) -> None:
         """Initialise the Random Forest model.
 
@@ -44,12 +45,16 @@ class RandomForestModel:
             class_names (dict[int, str] | None, optional): Mapping from integer
                 class label to name. Falls back to DEFAULT_CLASS_NAMES
                 when None.
+            min_samples_leaf (int, optional): Minimum number of samples required to
+                be at a leaf node. Higher values prevent overfitting to the majority 
+                class. Defaults to 1.
         """
         self._numeric_block_columns = numeric_block_columns
         self._n_estimators = n_estimators
         self._max_depth = max_depth
         self._random_state = random_state
         self._class_names = class_names or self.DEFAULT_CLASS_NAMES
+        self._min_samples_leaf = min_samples_leaf
 
         self._pipe: Pipeline | None = None
 
