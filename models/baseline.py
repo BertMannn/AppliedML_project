@@ -3,9 +3,6 @@ from __future__ import annotations
 import pandas as pd
 import numpy as np
 
-
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
 from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
@@ -14,55 +11,7 @@ from scipy import sparse
 from imblearn.under_sampling import RandomUnderSampler
 from itertools import combinations
 
-
-NUMERIC_FEATURE_NAMES = (
-    "Calories",
-    "FatContent",
-    "SaturatedFatContent",
-    "CholesterolContent",
-    "SodiumContent",
-    "CarbohydrateContent",
-    "FiberContent",
-    "SugarContent",
-    "ProteinContent",
-    "CookTimeMinutes",
-    "PrepTimeMinutes",
-    "TotalTimeMinutes",
-    "KeywordCount",
-    "IngredientCount",
-    "InstructionStepCount",
-    "DescriptionLength",
-    "RecipeServings",
-)
-
-
-def build_logres_features(numeric_block_columns: list[str]) -> ColumnTransformer:
-    """Build preprocessing ColumnTransformer for sparse matrix using in our logres baseline
-
-    Args:
-        numeric_block_columns (list[str]): column names of the numeric block of the sparse matrix, in order
-
-    Returns:
-        ColumnTransformer: Can now use sparse input
-    """
-    numeric_names = set(NUMERIC_FEATURE_NAMES)
-    numeric_indices = [
-        i for i, c in enumerate(numeric_block_columns) if c in numeric_names
-    ]
-    categorical_indices = [
-        i
-        for i, c in enumerate(numeric_block_columns)
-        if c.startswith("RecipeCategory_")
-    ]
-
-    return ColumnTransformer(
-        [
-            # with_mean = False, because we are using sparse matrices
-            ("numeric", StandardScaler(with_mean=False), numeric_indices),
-            ("categorical", "passthrough", categorical_indices),
-        ],
-        remainder="passthrough",
-    )
+from .feature_prep import build_features
 
 
 class BaselineLR:
@@ -140,7 +89,7 @@ class BaselineLR:
                 [
                     (
                         "preprocessing",
-                        build_logres_features(self._numeric_block_columns),
+                        build_features(self._numeric_block_columns),
                     ),
                     (
                         "lr",
@@ -231,7 +180,7 @@ class BaselineLR:
                 [
                     (
                         "preprocessing",
-                        build_logres_features(self._numeric_block_columns),
+                        build_features(self._numeric_block_columns),
                     ),
                     ("lr", base_lr),
                 ]
@@ -240,7 +189,7 @@ class BaselineLR:
                 [
                     (
                         "preprocessing",
-                        build_logres_features(self._numeric_block_columns),
+                        build_features(self._numeric_block_columns),
                     ),
                     ("lr", OneVsRestClassifier(base_lr)),
                 ]
@@ -249,7 +198,7 @@ class BaselineLR:
                 [
                     (
                         "preprocessing",
-                        build_logres_features(self._numeric_block_columns),
+                        build_features(self._numeric_block_columns),
                     ),
                     ("lr", OneVsOneClassifier(base_lr)),
                 ]
