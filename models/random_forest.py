@@ -79,6 +79,7 @@ class RandomForestModel:
                     RandomForestClassifier(
                         n_estimators=self._n_estimators,
                         max_depth=self._max_depth,
+                        min_samples_leaf=self._min_samples_leaf,
                         class_weight="balanced",
                         random_state=self._random_state,
                         n_jobs=-1,
