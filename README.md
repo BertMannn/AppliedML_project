@@ -118,11 +118,3 @@ Example response:
 }
 ```
 
-## Submission Evidence
-
-For the model deployment assignment, collect:
-
-- A screenshot of `http://127.0.0.1:8000/docs`.
-- A screenshot or terminal capture of a successful `curl` or Postman request.
-- The RF vs GBM comparison table above.
-- A short note that both models beat random guessing on macro F1.
