@@ -6,7 +6,7 @@ import re
 class CleanRecipeData:
     def __call__(self, data_path: Path, *, write_new_data: bool = False):
         """When you call the class the data will be cleaned. This is done by
-        removing useless columns, NA values, and rows with reviewcount <10
+        removing useless columns, NA values, and rows with reviewcount <5
 
         Args:
             data_path (Path): Path to the data
@@ -27,7 +27,7 @@ class CleanRecipeData:
         print("Dropping Duplicates...")
         df = df.drop_duplicates()
 
-        print("Dropping NA or <10 reviews...")
+        print("Dropping NA or <5 reviews...")
         df = df[df["ReviewCount"] != "NA"]
         df = df.dropna(subset=["ReviewCount"])
         # After this there was still 1 row where the aggregated rating was NA, so we drop that too:
@@ -35,8 +35,8 @@ class CleanRecipeData:
 
         print(f"Rows after dropping NA: {len(df)}")
 
-        df = df[df["ReviewCount"].astype(int) >= 10]
-        print(f"Rows after dropping ReviewCount <10: {len(df)}")
+        df = df[df["ReviewCount"].astype(int) >= 5]
+        print(f"Rows after dropping ReviewCount <5: {len(df)}")
 
         print("Dropping useless columns...")
         useless_columns = [
@@ -88,7 +88,6 @@ class CleanRecipeData:
 
         # R vectors start with "c("
         if r_vec.startswith("c("):
-            # Get vector content
             vector_content = r_vec[2:-1]
             # Find all items in the vector
             items = re.findall(r'"((?:[^"\\]|\\.)*)"', vector_content)
