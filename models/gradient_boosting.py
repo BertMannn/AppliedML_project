@@ -132,3 +132,7 @@ class GradientBoostingModel:
             return labels, probability
 
         return labels
+    
+    @property
+    def classes_(self):
+        return self._class_names
