@@ -1,9 +1,13 @@
 # AppliedML_project
 
-FastAPI deployment for the recipe rating classification models.
+## Project Summary
 
-The API accepts raw recipe features, applies the same preprocessing used during
-training, and returns human-readable rating classes:
+This project predicts recipe rating classes using recipe information from
+Food.com. We use recipe text, nutritional values, timing information, and
+engineered features to train and compare Random Forest and Gradient Boosting
+models. The trained models are accessible through an API that accepts raw
+recipe data, applies the required preprocessing, and returns one of three
+rating classes:
 
 - `<= 4.0`
 - `4.5`
@@ -117,4 +121,3 @@ Example response:
   }
 }
 ```
-
