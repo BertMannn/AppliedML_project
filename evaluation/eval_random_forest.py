@@ -1,10 +1,11 @@
-from sklearn.metrics import f1_score, confusion_matrix, classification_report, make_scorer
+from sklearn.metrics import f1_score, confusion_matrix, classification_report, make_scorer, ConfusionMatrixDisplay
 from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 import joblib
+import matplotlib.pyplot as plt
 
 from models.random_forest import RandomForestModel
 from preprocessing.get_data import get_data
@@ -52,8 +53,11 @@ def eval_random_forest(*, verbose: bool = False):
     print("Running GridSearchCV...")
     grid_search.fit(X_train, y_train)
 
-    print(f"\nBest params:   {grid_search.best_params_}")
-    print(f"Best CV macro F1: {grid_search.best_score_:.4f}")
+    best_index = grid_search.best_index_
+    cv_std = grid_search.cv_results_["std_test_score"][best_index]
+
+    print(f"Best params: {grid_search.best_params_}")
+    print(f"Best CV macro F1: {grid_search.best_score_:.4f} ± {cv_std:.4f}")
 
     # ------------------------------ #
     #  Over/underfitting evaluation: #
@@ -135,6 +139,15 @@ def eval_random_forest(*, verbose: bool = False):
     print("=" * 50)
     print(df_summary.to_string(index=False))
     print("=" * 50)
+    
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ConfusionMatrixDisplay.from_predictions(
+        y_test, y_pred_rf, display_labels=["≤4.0", "4.5", "5.0"], ax=ax
+    )
+    plt.tight_layout()
+    plt.savefig("evaluation/confusion_matrix_rf.png", dpi=150)
+    plt.close()
+
 
     return best_rf, df_summary
 
