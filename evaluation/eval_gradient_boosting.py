@@ -1,10 +1,11 @@
-from sklearn.metrics import f1_score, confusion_matrix, classification_report, make_scorer
+from sklearn.metrics import f1_score, confusion_matrix, classification_report, make_scorer, ConfusionMatrixDisplay
 from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from lightgbm import LGBMClassifier
 import pandas as pd
 import joblib
+import matplotlib.pyplot as plt
 
 from models.gradient_boosting import GradientBoostingModel
 from preprocessing.get_data import get_data
@@ -51,8 +52,11 @@ def eval_gradient_boosting(*, verbose: bool = False):
     print("Running GridSearchCV...")
     grid_search.fit(X_train, y_train)
 
+    best_index = grid_search.best_index_
+    cv_std = grid_search.cv_results_["std_test_score"][best_index]
+
+    print(f"Best CV macro F1: {grid_search.best_score_:.4f} ± {cv_std:.4f}")
     print(f"\nBest parameters:   {grid_search.best_params_}")
-    print(f"Best CV macro F1: {grid_search.best_score_:.4f}")
 
     #  Over/underfitting evaluation: 
 
@@ -131,6 +135,14 @@ def eval_gradient_boosting(*, verbose: bool = False):
     print("=" * 50)
     print(df_summary.to_string(index=False))
     print("=" * 50)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ConfusionMatrixDisplay.from_predictions(
+        y_test, y_pred_gbm, display_labels=["≤4.0", "4.5", "5.0"], ax=ax
+    )
+    plt.tight_layout()
+    plt.savefig("evaluation/confusion_matrix_gbm.png", dpi=150)
+    plt.close()
 
     return best_gbm, df_summary
 
