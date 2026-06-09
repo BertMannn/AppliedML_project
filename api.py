@@ -10,6 +10,7 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
+from preprocessing.data_split import split_data
 from preprocessing.text_features import BuildFeatureMatrix
 
 
@@ -123,8 +124,6 @@ def load_model(model_name: str):
 
 
 def _training_frame_for_extractor() -> pd.DataFrame:
-    from preprocessing.data_split import split_data
-
     train_df, _ = split_data()
     return train_df
 
