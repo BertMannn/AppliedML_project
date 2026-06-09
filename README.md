@@ -25,10 +25,11 @@ On the validation/test split used in this project:
 
 | Model | Accuracy | Macro F1 | Weighted F1 |
 | --- | ---: | ---: | ---: |
-| Random Forest | 0.6706 | 0.3913 | 0.6559 |
-| Gradient Boosting | 0.5961 | 0.4059 | 0.6233 |
-| Dummy uniform/random | 0.3317 | 0.2682 | - |
-| Dummy majority | 0.7507 | 0.2859 | - |
+| Random Forest | 0.6705 | 0.3949 | 0.6570 |
+| Gradient Boosting | 0.5990 | 0.4025 | 0.6237 |
+| Baseline (OvR) | 0.4971 | 0.3630 | 0.5544 |
+| Dummy uniform/random | 0.3322 | 0.2630 | 0.3995 |
+| Dummy majority | 0.7507 | 0.2859 | 0.6437 |
 
 Random Forest has higher accuracy. Gradient Boosting has higher macro F1, which
 is useful because the classes are imbalanced.
